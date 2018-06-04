@@ -15,61 +15,55 @@ $(document).ready(function() {
 
 		var subset;
 		var strategy = {
-			match: /\B@([^\s\n]*)?$/,
+			match: /(^|\s)@(\w*(?:\s*\w*))$/,
 			search: function (term, callback) {
-				var usernames;
+				var userObjects;
+
 				if (!term) {
-					usernames = localUserList.concat(groupList).filter(function(value, index, array) {
-						return array.indexOf(value) === index && value !== app.user.username;
-					}).sort(function(a, b) {
+					userObjects = localUserList.concat(groupList).filter(function(value, index, array) {
+						var display_name = value.display_name;
+						return array.map(value => value.display_name).indexOf(value) === index
+							   && display_name !== app.user.username;
+					}).sort(function(first, second) {
+						var a = first.display_name;
+						var b = second.display_name;
 						return a.toLocaleLowerCase() > b.toLocaleLowerCase();
 					});
-					return callback(usernames);
+					return callback(userObjects);
 				}
 
-				socket.emit('user.search', {query: term}, function(err, userdata) {
+				socket.emit('plugins.quest.connections.searchUsers', {query: term}, function (err, userdata) {
 					if (err) {
 						return callback([]);
 					}
 
-					usernames = userdata.users.map(function(user) {
-						return user.username;
-					});
-
-					subset = localUserList.concat(groupList).filter(function(username) {
-						return username.toLocaleLowerCase().indexOf(term.toLocaleLowerCase()) !== -1;
-					});
-
-					usernames = usernames.concat(subset).filter(function(value, index, array) {
-						return array.indexOf(value) === index;
-					});
-
-					subset = subset.map(function(name) {
-						return name.toLocaleLowerCase();
-					});
-
-					usernames.sort(function(a, b) {
-						if (subset.indexOf(a.toLocaleLowerCase()) !== -1 && subset.indexOf(b.toLocaleLowerCase()) === -1) {
-							return -1;
-						} else if (subset.indexOf(a.toLocaleLowerCase()) === -1 && subset.indexOf(b.toLocaleLowerCase()) !== -1) {
-							return 1;
-						} else {
-							return a.toLocaleLowerCase() > b.toLocaleLowerCase();
-						}
+					userObjects = userdata.users.map(function(user) {
+						return {display_name: user.display_name, picture: user.avatar, nodebbuid: user.node_bb_id, apiId: user.id};
 					});
 
 					// Remove current user from suggestions
-					if (app.user.username && usernames.indexOf(app.user.username) !== -1) {
-						usernames.splice(usernames.indexOf(app.user.username), 1);
+					if (app.user.fullname && userObjects.map(value => value.display_name).indexOf(app.user.fullname) !== -1) {
+						var index = userObjects.map(value => value.display_name).indexOf(app.user.username);
+						userObjects.splice(index, 1);
 					}
 
-					callback(usernames);
+					callback(userObjects);
 				});
 			},
-			index: 1,
+			template: function (value, term) {
+				var el = `<div>
+							<img src="${value.picture}" />
+							<div data-uid="${value.nodebbuid}"
+								data-picture="${value.picture}"
+								data-id="${value.apiId}">
+							${value.display_name}
+							</div>
+						</div>`;
+				return el;
+			},
 			replace: function (mention) {
-				mention = $('<div/>').html(mention).text();
-				return '@' + utils.slugify(mention, true) + ' ';
+				mention = $('<div/>').html(mention.nodebbuid).text();
+				return '@' + mention + ' ';
 			},
 			cache: true
 		};
@@ -83,11 +77,22 @@ $(document).ready(function() {
 	});
 
 	function loadDomUsers() {
+		var ids = [];
 		var DOMusers = [];
 		$('[component="post"][data-uid!="0"]').each(function(idx, el) {
-			var	username = el.getAttribute('data-username');
-			if (DOMusers.indexOf(username) === -1) {
-				DOMusers.push(username);
+			var	apiId = el.getAttribute('data-api');
+			if (ids.indexOf(apiId) === -1) {
+				var display_name = el.getAttribute('data-username');
+				var picture = el.getAttribute('data-picture');
+				var nodebbuid = el.getAttribute('data-uid');
+
+				var userObject = {
+					display_name: display_name,
+					picture: picture,
+					nodebbuid: nodebbuid,
+					apiId: apiId
+				};
+				DOMusers.push(userObject);
 			}
 		});
 		return DOMusers;

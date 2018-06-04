@@ -17,6 +17,10 @@ var batch = module.parent.require('./batch');
 
 var SocketPlugins = module.parent.require('./socket.io/plugins');
 
+var request = require.main.require('request');
+var stream = require('getstream');
+var config = require('./config');
+
 var regex = XRegExp('(?:^|\\s)(@[\\p{L}\\d\\-_.]+)', 'g');	// used in post text transform, accounts for HTML
 var rawRegex = XRegExp('(?:^|\\s)(@[\\p{L}\\d\-_.]+)', 'g');	// used in notifications, as raw text is passed in this hook
 var isLatinMention = /@[\w\d\-_.]+$/;
@@ -91,7 +95,7 @@ Mentions.notify = function(data) {
 
 	async.parallel({
 		userRecipients: function(next) {
-			async.filter(matches, User.existsBySlug, next);
+			async.filter(matches, User.exists, next);
 		},
 		groupRecipients: function(next) {
 			async.filter(matches, Groups.existsBySlug, next);
@@ -110,12 +114,10 @@ Mentions.notify = function(data) {
 				Topics.getTopicFields(postData.tid, ['title', 'cid'], next);
 			},
 			author: function(next) {
-				User.getUserField(postData.uid, 'username', next);
+				User.getUserField(postData.uid, 'fullname', next);
 			},
 			uids: function(next) {
-				async.map(results.userRecipients, function(slug, next) {
-					User.getUidByUserslug(slug, next);
-				}, next);
+				next(null, results.userRecipients)
 			},
 			groupData: function(next) {
 				getGroupMemberUids(results.groupRecipients, next);
@@ -172,6 +174,10 @@ function sendNotificationToUids(postData, uids, nidType, notificationText) {
 	if (!uids.length) {
 		return;
 	}
+
+	console.log('>>> postData', postData);
+	console.log('>>> uids', uids);
+	console.log('>>> nidType', nidType);
 
 	var filteredUids = [];
 	var notification;
@@ -293,18 +299,21 @@ Mentions.parseRaw = function(content, callback) {
 
 	async.each(matches, function(match, next) {
 		var slug = Utils.slugify(match.slice(1));
-
 		match = removePunctuationSuffix(match);
 
 		async.parallel({
 			groupExists: async.apply(Groups.existsBySlug, slug),
-			uid: async.apply(User.getUidByUserslug, slug)
+			user: async.apply(User.getUsersWithFields, [slug], ['fullname'], 1)
 		}, function(err, results) {
 			if (err) {
 				return next(err);
 			}
 
-			if (results.uid || results.groupExists) {
+			if (results.user) {
+				results.user = results.user[0];
+			}
+			
+			if (results.user || results.groupExists) {
 				var regex = isLatinMention.test(match)
 					? new RegExp('(?:^|\\s)' + match + '\\b', 'g')
 					: new RegExp('(?:^|\\s)' + match, 'g');
@@ -318,8 +327,8 @@ Mentions.parseRaw = function(content, callback) {
 						var atIndex = match.indexOf('@');
 						var plain = match.slice(0, atIndex);
 						match = match.slice(atIndex);
-						var str = results.uid
-								? '<a class="plugin-mentions-user plugin-mentions-a" href="' + nconf.get('url') + '/uid/' + results.uid + '">' + match + '</a>'
+						var str = results.user
+								? '<a class="plugin-mentions-user plugin-mentions-a" href="' + nconf.get('url') + '/user/' + results.user.uid + '">@' + results.user.fullname + '</a>'
 								: '<a class="plugin-mentions-group plugin-mentions-a" href="' + nconf.get('url') + '/groups/' + slug + '">' + match + '</a>';
 
 						return plain + str;
