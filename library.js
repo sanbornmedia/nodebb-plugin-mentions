@@ -37,6 +37,8 @@ var Mentions = {
 	_defaults: {
 		autofillGroups: 'off',
 		disableGroupMentions: '[]',
+		streamKey: '',
+		streamSecret: ''
 	}
 };
 SocketPlugins.mentions = {};
@@ -196,7 +198,8 @@ function sendNotificationToUids(postData, uids, nidType, notificationText) {
 		}
 
 		var postInfo = results;
-		var streamClient = stream.connect(config.stream['key'], config.stream['secret']);
+		var settings = Mentions._settings;
+		var streamClient = stream.connect(settings.streamKey, settings.streamSecret);
 		var env = config.environment;
 
 		uids.forEach((uid) => {

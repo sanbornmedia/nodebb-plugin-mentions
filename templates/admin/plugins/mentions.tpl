@@ -18,6 +18,14 @@
 					<!-- END groups -->
 				</select>
 			</div>
+			<div class="form-group">
+				<label for="streamKey">Enter your Stream key</label>
+				<input type="text" name="streamKey" value=""/>
+			</div>
+			<div class="form-group">
+				<label for="streamSecret">Enter your Stream secret</label>
+				<input type="text" name="streamSecret" value=""/>
+			</div>
 		</div>
 	</div>
 </form>
