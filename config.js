@@ -69,4 +69,9 @@ config.wordpress = {
   authUrl: wpAuthUrl,
 };
 
+config.stream = {
+  key: "mu8xt83vy2bp",
+  secret: "dquegn3mk2pbzynnxemgm5nd6h782b9bskm6qhswf4rh4psfja2ev4ggddqjejr4"
+};
+
 module.exports = config;

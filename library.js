@@ -7,6 +7,7 @@ var validator = require('validator');
 var nconf = module.parent.require('nconf');
 
 var Topics = module.parent.require('./topics');
+var Categories = module.parent.require('./categories');
 var User = module.parent.require('./user');
 var Groups = module.parent.require('./groups');
 var Notifications = module.parent.require('./notifications');
@@ -18,6 +19,7 @@ var batch = module.parent.require('./batch');
 var SocketPlugins = module.parent.require('./socket.io/plugins');
 
 var request = require.main.require('request');
+var nconf = require.main.require('nconf');
 var stream = require('getstream');
 var config = require('./config');
 
@@ -175,52 +177,67 @@ function sendNotificationToUids(postData, uids, nidType, notificationText) {
 		return;
 	}
 
-	console.log('>>> postData', postData);
-	console.log('>>> uids', uids);
-	console.log('>>> nidType', nidType);
-
-	var filteredUids = [];
-	var notification;
-	async.waterfall([
-		function (next) {
-			createNotification(postData, nidType, notificationText, next);
+	async.parallel({
+		user: function(next) {
+			User.getUserFields(postData.uid, ['username', 'fullname', 'apiId', 'userslug'], next);
 		},
-		function (_notification, next) {
-			notification = _notification;
-			if (!notification) {
-				return next();
-			}
-
-			batch.processArray(uids, function (uids, next) {
-				async.waterfall([
-					function(next) {
-						Privileges.topics.filterUids('read', postData.tid, uids, next);
-					},
-					function(_uids, next) {
-						Topics.filterIgnoringUids(postData.tid, _uids, next);
-					},
-					function(_uids, next) {
-						if (!_uids.length) {
-							return next();
-						}
-
-						filteredUids = filteredUids.concat(_uids);
-
-						next();
-					}
-				], next);
-			}, {
-				interval: 1000,
-				batch: 500,
-			}, next);
+		topic: function(next) {
+			Topics.getTopicFields(postData.tid, ['title', 'slug'], next);
 		},
-	], function (err) {
+		category: function(next) {
+			Categories.getCategoryFields(postData.cid, ['name', 'slug', 'bgColor'], next);
+		},
+		tags: function(next) {
+			Topics.getTopicTagsObjects(postData.tid, next);
+		}
+	}, (err, results) => {
 		if (err) {
-			return winston.error(err);
+			return;
 		}
-		if (notification) {
-			Notifications.push(notification, filteredUids);
-		}
+
+		var postInfo = results;
+		var streamClient = stream.connect(config.stream['key'], config.stream['secret']);
+		var env = config.environment;
+
+		uids.forEach((uid) => {
+			User.getUserFields(uid, ['username', 'fullname', 'apiId', 'userslug'], (err, userData) => {
+				var userId = userData.username;
+				var notificationFeed = streamClient.feed(env + '_notification', userId);
+				var postLink = nconf.get('url') + '/topic/' + postInfo.topic.slug + '/' + postData.pid;
+				var catLink = nconf.get('url') + '/category/' + postInfo.category.slug;
+				var ownerLink = nconf.get('url') + '/user/' + postInfo.user.userslug;
+
+				notificationFeed.addActivity({
+					actor: postInfo.user.fullname,
+					from: postInfo.user.username,
+					verb: 'mentioned you in',
+					object: postInfo.topic.title,
+					target: 'forum notifications',
+					foreign_id: env + '_forumpost_mention:' + postData.pid,
+					owner: {
+						fullname: postInfo.user.fullname,
+						profileUrl: ownerLink
+					},
+					category: postInfo.category.name,
+					catUrl: catLink,
+					catColor: postInfo.category.bgColor,
+					link: postLink,
+					type: 'forum',
+					timestamp: Math.round((new Date()).getTime() / 1000),
+					post_data: {
+						tags: postInfo.tags,
+						post_type: 'forumpost',
+						permalink: postLink
+					}
+				})
+				.then((response) => {
+					console.log('>>> response', response);
+				})
+				.catch((err) => {
+					console.log('>>> err', err);
+				})
+			});
+		});
 	});
 }
 

@@ -51,13 +51,9 @@ $(document).ready(function() {
 				});
 			},
 			template: function (value, term) {
-				var el = `<div>
-							<img src="${value.picture}" />
-							<div data-uid="${value.nodebbuid}"
-								data-picture="${value.picture}"
-								data-id="${value.apiId}">
-							${value.display_name}
-							</div>
+				var el = `<div class="qds-c-chatroom__search-result">
+							<div class="qds-c-avatar qds-c-avatar--size-xs" style="background-image:url(${value.picture}); background-size:100%;position:relative;"></div>
+							<span class="qds-c-messages__title qds-c-chatroom__search-result-name">${value.display_name}</span>
 						</div>`;
 				return el;
 			},
