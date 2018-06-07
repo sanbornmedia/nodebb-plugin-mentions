@@ -9,6 +9,6 @@ Controllers.renderAdminPage = function (req, res, next) {
 		if (err) {
 			return next(err);
 		}
-		res.render('admin/plugins/mentions', { groups: groupData });
+		res.render('admin/plugins/mentions-quest', { groups: groupData });
 	});
 };

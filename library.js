@@ -47,8 +47,8 @@ Mentions.init = function (data, callback) {
 	var hostMiddleware = module.parent.require('./middleware');
 	var controllers = require('./controllers');
 
-	data.router.get('/admin/plugins/mentions', hostMiddleware.admin.buildHeader, controllers.renderAdminPage);
-	data.router.get('/api/admin/plugins/mentions', controllers.renderAdminPage);
+	data.router.get('/admin/plugins/mentions-quest', hostMiddleware.admin.buildHeader, controllers.renderAdminPage);
+	data.router.get('/api/admin/plugins/mentions-quest', controllers.renderAdminPage);
 
 	// Retrieve settings
 	Meta.settings.get('mentions', function (err, settings) {
@@ -59,7 +59,7 @@ Mentions.init = function (data, callback) {
 
 Mentions.addAdminNavigation = function (header, callback) {
 	header.plugins.push({
-		route: '/plugins/mentions',
+		route: '/plugins/mentions-quest',
 		name: 'Mentions'
 	});
 
