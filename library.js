@@ -60,7 +60,7 @@ Mentions.init = function (data, callback) {
 Mentions.addAdminNavigation = function (header, callback) {
 	header.plugins.push({
 		route: '/plugins/mentions-quest',
-		name: 'Mentions'
+		name: 'Mentions Quest'
 	});
 
 	callback(null, header);

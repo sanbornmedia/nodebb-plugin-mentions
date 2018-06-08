@@ -11,7 +11,7 @@ define('admin/plugins/mentions-quest', ['settings'], function (Settings) {
 		$(window).on('action:admin.settingsLoaded', applyDefaults);
 
 		$('#save').on('click', function () {
-			Settings.save('mentions', $('.mentions-settings'), function () {
+			Settings.save('mentions-quest', $('.mentions-settings'), function () {
 				app.alert({
 					type: 'success',
 					alert_id: 'mentions-saved',
