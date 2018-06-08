@@ -51,7 +51,7 @@ Mentions.init = function (data, callback) {
 	data.router.get('/api/admin/plugins/mentions-quest', controllers.renderAdminPage);
 
 	// Retrieve settings
-	Meta.settings.get('mentions', function (err, settings) {
+	Meta.settings.get('mentions-quest', function (err, settings) {
 		Object.assign(Mentions._settings, Mentions._defaults, settings);
 		callback();
 	});

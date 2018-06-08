@@ -1,12 +1,12 @@
 'use strict';
 /* globals $, app, socket */
 
-define('admin/plugins/mentions', ['settings'], function (Settings) {
+define('admin/plugins/mentions-quest', ['settings'], function (Settings) {
 
 	var ACP = {};
 
 	ACP.init = function () {
-		Settings.load('mentions', $('.mentions-settings'));
+		Settings.load('mentions-quest', $('.mentions-settings'));
 
 		$(window).on('action:admin.settingsLoaded', applyDefaults);
 
