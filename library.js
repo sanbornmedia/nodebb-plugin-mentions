@@ -99,7 +99,7 @@ Mentions.notify = function(data) {
 
 	async.parallel({
 		userRecipients: function(next) {
-			async.filter(matches, User.exists, next);
+			async.filter(matches, User.existsBySlug, next);
 		},
 		groupRecipients: function(next) {
 			async.filter(matches, Groups.existsBySlug, next);
@@ -108,6 +108,8 @@ Mentions.notify = function(data) {
 		if (err) {
 			return;
 		}
+
+		console.log('>>> results', results);
 
 		if (!results.userRecipients.length && !results.groupRecipients.length) {
 			return;
@@ -121,7 +123,9 @@ Mentions.notify = function(data) {
 				User.getUserField(postData.uid, 'fullname', next);
 			},
 			uids: function(next) {
-				next(null, results.userRecipients)
+				async.map(results.userRecipients, function(slug, next) {
+					User.getUidByUserslug(slug, next);
+				}, next);
 			},
 			groupData: function(next) {
 				getGroupMemberUids(results.groupRecipients, next);
@@ -204,7 +208,7 @@ function sendNotificationToUids(postData, uids, nidType, notificationText) {
 
 		uids.forEach((uid) => {
 			User.getUserFields(uid, ['username', 'fullname', 'apiId', 'userslug'], (err, userData) => {
-				var userId = userData.username;
+				var userId = userData.apiId;
 				var notificationFeed = streamClient.feed(env + '_notification', userId);
 				var postLink = nconf.get('url') + '/topic/' + postInfo.topic.slug + '/' + postData.pid;
 				var catLink = nconf.get('url') + '/category/' + postInfo.category.slug;
@@ -212,7 +216,7 @@ function sendNotificationToUids(postData, uids, nidType, notificationText) {
 
 				notificationFeed.addActivity({
 					actor: postInfo.user.fullname,
-					from: postInfo.user.username,
+					from: postInfo.user.apiId,
 					verb: 'mentioned you in',
 					object: postInfo.topic.title,
 					target: 'forum notifications',
@@ -323,6 +327,7 @@ Mentions.parseRaw = function(content, callback) {
 
 		async.parallel({
 			groupExists: async.apply(Groups.existsBySlug, slug),
+			uid: async.apply(User.getUidByUserslug, slug),
 			user: async.apply(User.getUsersWithFields, [slug], ['fullname'], 1)
 		}, function(err, results) {
 			if (err) {
@@ -348,7 +353,7 @@ Mentions.parseRaw = function(content, callback) {
 						var plain = match.slice(0, atIndex);
 						match = match.slice(atIndex);
 						var str = results.user
-								? '<a class="plugin-mentions-user plugin-mentions-a" href="' + nconf.get('url') + '/user/' + results.user.uid + '">@' + results.user.fullname + '</a>'
+								? '<a class="plugin-mentions-user plugin-mentions-a" href="' + nconf.get('url') + '/uid/' + results.uid + '">@' + results.user.fullname + '</a>'
 								: '<a class="plugin-mentions-group plugin-mentions-a" href="' + nconf.get('url') + '/groups/' + slug + '">' + match + '</a>';
 
 						return plain + str;

@@ -38,7 +38,7 @@ $(document).ready(function() {
 					}
 
 					userObjects = userdata.users.map(function(user) {
-						return {display_name: user.display_name, picture: user.avatar, nodebbuid: user.node_bb_id, apiId: user.id};
+						return {display_name: user.display_name, picture: user.avatar, nodebbuid: user.node_bb_id, apiId: user.id, username: user.username};
 					});
 
 					// Remove current user from suggestions
@@ -58,7 +58,7 @@ $(document).ready(function() {
 				return el;
 			},
 			replace: function (mention) {
-				mention = $('<div/>').html(mention.nodebbuid).text();
+				mention = $('<div/>').html(mention.username).text();
 				return '@' + mention + ' ';
 			},
 			cache: true
