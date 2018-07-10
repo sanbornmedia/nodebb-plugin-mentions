@@ -59,7 +59,7 @@ $(document).ready(function() {
 			},
 			replace: function (mention) {
 				mention = $('<div/>').html(mention.username).text();
-				return '@' + mention + ' ';
+				return ' @' + mention + ' ';
 			},
 			cache: true
 		};

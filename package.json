@@ -1,6 +1,6 @@
 {
   "name": "nodebb-plugin-mentions-quest",
-  "version": "2.2.15",
+  "version": "2.2.17",
   "description": "NodeBB Plugin that allows users to mention other users by prepending an '@' sign to their display name",
   "main": "library.js",
   "scripts": {
@@ -22,7 +22,7 @@
     "url": "https://github.com/sanbornagency/nodebb-plugin-mentions/issues"
   },
   "nbbpm": {
-    "compatibility": "^1.5.2"
+    "compatibility": "^1.6.2"
   },
   "dependencies": {
     "async": "^2.1.4",
