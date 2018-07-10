@@ -329,7 +329,9 @@ Mentions.parseRaw = function(content, callback) {
 			groupExists: async.apply(Groups.existsBySlug, slug),
 			uid: async.apply(User.getUidByUserslug, slug),
 			user: async.apply(User.getUsersWithFields, [slug], ['fullname'], 1)
-		}, function(err, results) {
+		}, function(err, _results) {
+			var results = _results;
+
 			if (err) {
 				return next(err);
 			}
@@ -338,7 +340,7 @@ Mentions.parseRaw = function(content, callback) {
 				results.user = results.user[0];
 			}
 			
-			if (results.user || results.groupExists) {
+			if (results.uid || results.groupExists) {
 				var regex = isLatinMention.test(match)
 					? new RegExp('(?:^|\\s)' + match + '\\b', 'g')
 					: new RegExp('(?:^|\\s)' + match, 'g');
@@ -347,17 +349,20 @@ Mentions.parseRaw = function(content, callback) {
 					if ((i & 1) === 1) {
 						return c;
 					}
-					return c.replace(regex, function(match) {
-						// Again, cleaning up lookaround leftover bits
-						var atIndex = match.indexOf('@');
-						var plain = match.slice(0, atIndex);
-						match = match.slice(atIndex);
-						var str = results.user
-								? '<a class="plugin-mentions-user plugin-mentions-a" href="' + nconf.get('url') + '/uid/' + results.uid + '">@' + results.user.fullname + '</a>'
-								: '<a class="plugin-mentions-group plugin-mentions-a" href="' + nconf.get('url') + '/groups/' + slug + '">' + match + '</a>';
 
-						return plain + str;
-					});
+					User.getUserFields(results.uid, ['fullname'], (err, userObj) => {
+						return c.replace(regex, function(match) {
+							// Again, cleaning up lookaround leftover bits
+							var atIndex = match.indexOf('@');
+							var plain = match.slice(0, atIndex);
+							match = match.slice(atIndex);
+							var str = results.user
+									? '<a class="plugin-mentions-user plugin-mentions-a" href="' + nconf.get('url') + '/uid/' + results.uid + '">@' + userObj.fullname + '</a>'
+									: '<a class="plugin-mentions-group plugin-mentions-a" href="' + nconf.get('url') + '/groups/' + slug + '">' + match + '</a>';
+	
+							return plain + str;
+						});
+					})
 				});
 			}
 
