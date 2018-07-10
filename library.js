@@ -328,16 +328,19 @@ Mentions.parseRaw = function(content, callback) {
 		async.parallel({
 			groupExists: async.apply(Groups.existsBySlug, slug),
 			uid: async.apply(User.getUidByUserslug, slug),
-			user: async.apply(User.getUsersWithFields, [slug], ['fullname'], 1)
-		}, function(err, _results) {
-			var results = _results;
-
+			user: function (next) {
+				async.waterfall([
+					function (callback) {
+						User.getUidByUserslug(slug, callback);
+					},
+					function (uid, callback) {
+						User.getUserFields(uid, ['fullname'], callback);
+					}
+				], next);
+			}
+		}, function(err, results) {
 			if (err) {
 				return next(err);
-			}
-
-			if (results.user) {
-				results.user = results.user[0];
 			}
 			
 			if (results.uid || results.groupExists) {
@@ -350,19 +353,17 @@ Mentions.parseRaw = function(content, callback) {
 						return c;
 					}
 
-					User.getUserFields(results.uid, ['fullname'], (err, userObj) => {
-						return c.replace(regex, function(match) {
-							// Again, cleaning up lookaround leftover bits
-							var atIndex = match.indexOf('@');
-							var plain = match.slice(0, atIndex);
-							match = match.slice(atIndex);
-							var str = results.user
-									? '<a class="plugin-mentions-user plugin-mentions-a" href="' + nconf.get('url') + '/uid/' + results.uid + '">@' + userObj.fullname + '</a>'
-									: '<a class="plugin-mentions-group plugin-mentions-a" href="' + nconf.get('url') + '/groups/' + slug + '">' + match + '</a>';
-	
-							return plain + str;
-						});
-					})
+					return c.replace(regex, function(match) {
+						// Again, cleaning up lookaround leftover bits
+						var atIndex = match.indexOf('@');
+						var plain = match.slice(0, atIndex);
+						match = match.slice(atIndex);
+						var str = results.user
+								? '<a class="plugin-mentions-user plugin-mentions-a" href="' + nconf.get('url') + '/uid/' + results.uid + '">@' + results.user.fullname + '</a>'
+								: '<a class="plugin-mentions-group plugin-mentions-a" href="' + nconf.get('url') + '/groups/' + slug + '">' + match + '</a>';
+
+						return plain + str;
+					});
 				});
 			}
 
