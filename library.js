@@ -208,41 +208,46 @@ function sendNotificationToUids(postData, uids, nidType, notificationText) {
 
 		uids.forEach((uid) => {
 			User.getUserFields(uid, ['username', 'fullname', 'apiId', 'userslug'], (err, userData) => {
-				var userId = userData.apiId;
-				var notificationFeed = streamClient.feed(env + '_notification', userId);
-				var postLink = nconf.get('url') + '/topic/' + postInfo.topic.slug + '/' + postData.pid;
-				var catLink = nconf.get('url') + '/category/' + postInfo.category.slug;
-				var ownerLink = nconf.get('url') + '/user/' + postInfo.user.userslug;
 
-				notificationFeed.addActivity({
-					actor: postInfo.user.fullname,
-					from: postInfo.user.apiId,
-					verb: 'mentioned you in',
-					object: postInfo.topic.title,
-					target: 'forum notifications',
-					foreign_id: env + '_forumpost_mention:' + postData.pid,
-					owner: {
-						fullname: postInfo.user.fullname,
-						profileUrl: ownerLink
-					},
-					category: postInfo.category.name,
-					catUrl: catLink,
-					catColor: postInfo.category.bgColor,
-					link: postLink,
-					type: 'forum',
-					timestamp: Math.round((new Date()).getTime() / 1000),
-					post_data: {
-						tags: postInfo.tags,
-						post_type: 'forumpost',
-						permalink: postLink
-					}
-				})
-				.then((response) => {
-					console.log('>>> response', response);
-				})
-				.catch((err) => {
-					console.log('>>> err', err);
-				})
+				try {
+					var userId = userData.apiId;
+					var notificationFeed = streamClient.feed(env + '_notification', userId);
+					var postLink = nconf.get('url') + '/topic/' + postInfo.topic.slug + '/' + postData.pid;
+					var catLink = nconf.get('url') + '/category/' + postInfo.category.slug;
+					var ownerLink = nconf.get('url') + '/user/' + postInfo.user.userslug;
+	
+					notificationFeed.addActivity({
+						actor: postInfo.user.fullname,
+						from: postInfo.user.apiId,
+						verb: 'mentioned you in',
+						object: postInfo.topic.title,
+						target: 'forum notifications',
+						foreign_id: env + '_forumpost_mention:' + postData.pid,
+						owner: {
+							fullname: postInfo.user.fullname,
+							profileUrl: ownerLink
+						},
+						category: postInfo.category.name,
+						catUrl: catLink,
+						catColor: postInfo.category.bgColor,
+						link: postLink,
+						type: 'forum',
+						timestamp: Math.round((new Date()).getTime() / 1000),
+						post_data: {
+							tags: postInfo.tags,
+							post_type: 'forumpost',
+							permalink: postLink
+						}
+					})
+					.then((response) => {
+						console.log('>>> response', response);
+					})
+					.catch((err) => {
+						console.log('>>> err', err);
+					})
+				} catch (err) {
+					console.log('>>> stream mention err', err);
+				}
 			});
 		});
 	});
