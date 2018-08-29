@@ -22,7 +22,7 @@ $(document).ready(function() {
 				if (!term) {
 					userObjects = localUserList.concat(groupList).filter(function(value, index, array) {
 						var display_name = value.display_name;
-						return array.map(value => value.display_name).indexOf(value) === index
+						return array.map(function(value) {return value.display_name}).indexOf(value) === index
 							   && display_name !== app.user.username;
 					}).sort(function(first, second) {
 						var a = first.display_name;
@@ -42,8 +42,8 @@ $(document).ready(function() {
 					});
 
 					// Remove current user from suggestions
-					if (app.user.fullname && userObjects.map(value => value.display_name).indexOf(app.user.fullname) !== -1) {
-						var index = userObjects.map(value => value.display_name).indexOf(app.user.username);
+					if (app.user.fullname && userObjects.map(function(value) {return value.display_name}).indexOf(app.user.fullname) !== -1) {
+						var index = userObjects.map(function(value) {return value.display_name}).indexOf(app.user.username);
 						userObjects.splice(index, 1);
 					}
 
